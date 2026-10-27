@@ -61,8 +61,8 @@ Skills on `main` are published automatically, so a pull request check ([`.github
 | `metadata.summary` | One line, at most 200 characters, shown as the skill's card text in catalogs. A missing or empty summary is a warning for now; it becomes required once every skill has one. |
 | `metadata.deprecated` | Optional. `"true"` or `"false"`. |
 | `metadata.tier` | Optional. `"aws-managed"` or `"partner-managed"`: who maintains the skill. |
-| `metadata.agent_types` | The agents that load the skill, as comma-separated values from [`agent-types.json`](.github/scripts/skill-rules/agent-types.json), such as `"INCIDENT_RCA"`. Without it the skill installs as `GENERIC` and loads for every agent, which is a warning. The display tag `aws-devops-agent-skills.agent-types` doesn't set it. |
-| `metadata.aws-devops-agent-skills.*` | Only `agent-types`, `aws-services` and `technical-domains`, each a comma-separated list. Any other key under this prefix, or a misspelling of the prefix, is an error, so a typo can't drop the skill from a filter. A value not in [`vocabulary.json`](.github/scripts/skill-rules/vocabulary.json) is a warning, with the approved spelling when there is one. |
+| `metadata.aws-devops-agent-skills.agent-types` | The agents that load the skill, as comma-separated values from [`agent-types.json`](.github/scripts/skill-rules/agent-types.json), such as `"INCIDENT_RCA"`. An unknown value is an error, because this key decides which agents load the skill rather than only how catalogs filter it. `GENERIC` loads the skill for every agent, so it is an error to combine it with another value. Without the key the skill installs as `GENERIC` and loads for every agent, which is a warning. |
+| `metadata.aws-devops-agent-skills.*` | Only `agent-types`, `aws-services` and `technical-domains`, each a comma-separated list. Any other key under this prefix, or a misspelling of the prefix, is an error, so a typo can't drop the skill from a filter. For `aws-services` and `technical-domains`, a value not in [`vocabulary.json`](.github/scripts/skill-rules/vocabulary.json) is a warning, with the approved spelling when there is one. |
 
 The frontmatter must be plain YAML that every parser reads the same way. These are rejected: tabs; a byte order mark at the start of the file; line breaks other than newlines (U+0085, U+2028, U+2029); `---` anywhere but the closing line; anchors (`&`), aliases (`*`), tags (`!`), directives (`%`) and document markers; flow collections (`[...]` or `{...}`); keys that aren't plain text, and duplicate keys, at any depth; and unquoted values that some parsers read as numbers, such as `1e3`. A top-level key other than the Agent Skills specification's fields and `title` is a warning.
 
@@ -178,7 +178,7 @@ A pull request check ([`.github/workflows/validate-skill-evals.yml`](.github/wor
 
 | Required | |
 | --- | --- |
-| `evals/evals.json` | must exist |
+| `evals/evals.json` | must exist, unless the `functional` results are exempted (see "When a test type can't be run") |
 | `evals/structure/` | at least one `structure-tests-results-v<N>.json` |
 | `evals/best-practices/` | at least one **complete** `v<N>/`: `benchmark.json` **and** an `iteration-<n>/best-practices-tests-results.json` |
 | `evals/functional/` | at least one **complete** `v<N>/`: `benchmark.json`, `evals.json`, **and** an `iteration-<n>/<scenario-name>/` directory holding both `with_skill/functional-tests-results.json` and `without_skill/functional-tests-results.json` |
@@ -215,7 +215,21 @@ Some skills genuinely can't produce results for one of the test types. The two c
 }
 ```
 
-The exempted test type is then not checked. It's reported as a warning instead, so the check goes green while still showing what's missing and why. Keys are `structure`, `best-practices`, and `functional`; `evals.json` is hand-written rather than tool output, so it can't be exempted.
+The exempted test type is then not checked. It's reported as a warning instead, so the check goes green while still showing what's missing and why. Keys are `structure`, `best-practices`, and `functional`.
+
+`evals.json` isn't one of the keys, because you write it rather than the tool. It's the input to the functional tests, though — the tool reads it for that run, and the scenario directories a functional run writes are named from it — so exempting `functional` waives `evals.json` too. There's no run left for it to feed, and the check never reads the file, so requiring it would only ask for eval definitions nobody is going to execute. Exempting `structure` or `best-practices` doesn't waive it: those runs don't read it. If you've already written your definitions, commit them anyway — a maintainer running the tool later starts from them.
+
+**Partner-managed skills.** A skill whose `SKILL.md` sets `metadata.tier: "partner-managed"` commits an `evals/exemptions.json` with this reason for all three test types, which waives `evals/evals.json` along with the results, per the rule above:
+
+```json
+{
+  "structure":      { "reason": "Partner-managed skill: skill evaluation tool results aren't produced for partner-managed skills." },
+  "best-practices": { "reason": "Partner-managed skill: skill evaluation tool results aren't produced for partner-managed skills." },
+  "functional":     { "reason": "Partner-managed skill: skill evaluation tool results aren't produced for partner-managed skills." }
+}
+```
+
+This is the standing agreement for partner-managed skills, so it needs no separate sign-off from a maintainer, and the pull request doesn't need the manual testing evidence described below: the partner tests its skill, and a maintainer checks that it installs and loads before the connector that recommends it is promoted. The `enforce-evals` label still withdraws the exemption, and then `evals.json` is required too.
 
 Write a reason that explains the blocker and what *was* run — a future maintainer needs to know whether to revisit it. If the exemption is temporary, such as an agent type the tool will support later, say so, so it gets removed when the limitation goes away.
 
