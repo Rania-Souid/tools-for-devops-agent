@@ -40,18 +40,30 @@ sending.
 1. **Use the report headings.** Read `assets/report-format.md` and use its
    headings in its order: Is EBS the cause?, Cause, Evidence, Ruled out,
    Changes in the window, What to do, Data gaps (plus Support case draft only
-   where the template allows it). Don't replace them with your own sections.
-2. **Start with the right word.** The first line under "Is EBS the cause?" is
-   **Partly** when the cause is a change made in the account (including an AWS
-   FIS experiment) or the instance EBS limit, **No** when EBS is not the cause,
-   **Not confirmed** when no cause is confirmed, and **Yes** otherwise. Never
-   write "this isn't an EBS problem" for a change made in the account: the
-   disk is where it shows.
-3. **Report AWS Health.** The "Ruled out" table always has an AWS Health row
-   with the result of the check, or the reason it couldn't be done.
-4. **Never offer to make a change.** Don't ask "Want me to stop, modify,
-   detach, open...?" The agent's role is read-only. Tell the user what to do
-   and end with a question about further checks only.
+   where the template allows it). Don't replace them with your own sections,
+   and don't put a greeting or summary line before the first heading.
+2. **Start with the right word.** The answer begins exactly like this, with
+   one of the four words:
+
+   ```markdown
+   ## Is EBS the cause?
+
+   **Partly.** <one sentence>
+   ```
+
+   The word is **Partly** when the cause is a change made in the account
+   (including an AWS FIS experiment) or the instance EBS limit, **No** when
+   EBS is not the cause, **Not confirmed** when no cause is confirmed, and
+   **Yes** otherwise. For a change made in the account, never write "No",
+   "Good news" or "this isn't an EBS problem": the disk is where it shows.
+3. **Report AWS Health.** Call it in every run. The "Ruled out" table always
+   has an AWS Health row with the result of the check, or the reason it
+   couldn't be done. Never drop the row.
+4. **Never offer to make a change.** The agent's role is read-only. Never ask
+   "Want me to stop, modify, detach, open...?", not even for an AWS FIS
+   experiment. Write what the user can do under "What to do". The last line
+   of the answer may only offer further read-only checks, for example "Want
+   me to check the volume again after the experiment ends?"
 5. **No internal codes.** Never write the finding codes (F1 to F10) or this
    skill's file names in the answer.
 
